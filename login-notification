@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+# login-notifications
+# Version: 1.0
+# Authors: Helgi Hrafn Gunnarsson <helgi@binary.is>
+# About: A script for PAM to keep track of who is logging in and out of a system.
+# License: MIT
+import os
+import json
+import smtplib
+import sys
+from datetime import datetime
+
+from email.mime.text import MIMEText
+
+config_fields = [
+    'mail_host',
+    'mail_login_user',
+    'mail_login_pass',
+    'mail_from_address',
+    'mail_to_address',
+]
+
+include_env_vars = [
+    'PAM_RHOST',
+    'PAM_RUSER',
+    'PAM_SERVICE',
+    'PAM_TTY',
+    'PAM_USER',
+    'PAM_TYPE',
+]
+
+def usage():
+    print('Usage: login-notification <config-file>')
+    print()
+    print('Example config-file (JSON):')
+    print('{')
+    for i, config_field in enumerate(config_fields):
+        comma = '' if i == len(config_fields) - 1 else ','
+        print('    "%s": "%s"%s' % (config_field, config_field, comma))
+    print('}')
+    quit(1)
+
+def error(error_msg):
+    print('Error: %s\n' % error_msg, file=sys.stderr)
+    usage()
+
+if len(sys.argv) != 2:
+    usage()
+
+filename = sys.argv[1]
+
+if not os.path.isfile(filename):
+    error('Config file not found at location "%s"' % filename)
+
+with open(filename, 'r') as f:
+    content = f.read()
+    try:
+        config = json.loads(content)
+    except json.decoder.JSONDecodeError:
+        error('Config file must be valid JSON.')
+
+for config_field in config_fields:
+    if config_field not in config:
+        error('JSON field "%s" missing in config file' % config_field)
+
+subject = '[login-notification] Login report from %s' % config['mail_from_address']
+body = 'Timing: %s\n\n' % datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+body += 'Environment variables:\n\n'
+for varname in include_env_vars:
+    body += '- %s: %s\n' % (varname, os.environ.get(varname, ''))
+
+msg = MIMEText(body)
+msg['Subject'] = subject
+msg['From'] = config['mail_from_address']
+msg['To'] = config['mail_to_address']
+
+s = smtplib.SMTP_SSL(config['mail_host'], 465)
+s.login(config['mail_login_user'], config['mail_login_pass'])
+s.sendmail(config['mail_from_address'], [config['mail_to_address']], msg.as_string())
+
