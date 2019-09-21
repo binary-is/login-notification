@@ -1,0 +1,7 @@
+{
+    "mail_host": "mail.example.com",
+    "mail_login_user": "example-user@example.com",
+    "mail_login_pass": "the password for example-user@example.com",
+    "mail_from_address": "example-user@example.com",
+    "mail_to_address": "receiver@example.com"
+}
