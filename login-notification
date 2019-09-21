@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # login-notifications
-# Version: 1.0
+# Version: 1.0.1
 # Authors: Helgi Hrafn Gunnarsson <helgi@binary.is>
 # About: A script for PAM to keep track of who is logging in and out of a system.
 # License: MIT
